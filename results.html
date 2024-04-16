@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultados Sucursales</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="index.css" />
+</head>
+
+<body>
+  <div class="Header">
+    <nav class="navbar bg-warning">
+      <div class="container-fluid d-flex align-items-center justify-content-center">
+        <a class="navbar-brand" href="#">
+          <img src="/logo.png" alt="Logo" width="200" height="30" class="d-inline-block align-text-top" />
+        </a>
+      </div>
+    </nav>
+  </div>
+  <h1 class="text-center mt-3">Resultados de las sucursales</h1>
+
+  <div class="container">
+    <table class="table mb-3 mx-auto">
+      <thead>
+        <tr>
+          <th scope="col">Ubicación</th>
+          <th scope="col">Unidades en existencia</th>
+          <th scope="col">Demanda pronosticada mensual</th>
+          <th scope="col">Error de pronóstico</th>
+          <th scope="col">Nivel de disponibilidad</th>
+          <th scope="col">Dis</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-resultados">
+        <!-- Los datos se insertarán aquí -->
+      </tbody>
+    </table>
+  </div>
+
+  <h1 class="text-center mt-3">Cálculos</h1>
+
+  <div class="container">
+    <table class="table mb-3 mx-auto">
+      <thead>
+        <tr>
+          <th scope="col">Ubicación</th>
+          <th scope="col">Requerimientos Totales</th>
+          <th scope="col">Nivel actual existencias</th>
+          <th scope="col">Requerimientos Netos</th>
+          <th scope="col">Excesos prorreteado</th>
+          <th scope="col">Asignacion Despacho</th>
+
+        </tr>
+      </thead>
+      <tbody id="tabla-calculos">
+        <!-- Los datos se insertarán aquí -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    window.onload = function () {
+      // Obtener los datos de la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const dataString = urlParams.get('data');
+      const data = JSON.parse(dataString);
+
+      // Mostrar los datos en la tabla de resultados
+      const tablaResultados = document.getElementById('tabla-resultados');
+      data.datosSucursales.forEach(sucursal => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+      <td>${sucursal.ubicacion}</td>
+      <td>${sucursal.unidades}</td>
+      <td>${sucursal.demanda}</td>
+      <td>${sucursal.error}</td>
+      <td>${sucursal.disponibilidad}</td>
+      <td>${sucursal.dis}</td>
+    `;
+        tablaResultados.appendChild(fila);
+      });
+
+      // Calcular la suma total de demanda
+      let totalDemanda = 0;
+      data.datosSucursales.forEach(sucursal => {
+        totalDemanda += sucursal.demanda;
+      });
+
+      // Calcular y mostrar los datos en la tabla de cálculos
+      const tablaCalculos = document.getElementById('tabla-calculos');
+      let totalRequerimientosNetos = 0; // Variable para almacenar la suma de requerimientos netos de todas las sucursales
+      let repartir = 0; // Variable para calcular la cantidad a repartir
+
+      data.datosSucursales.forEach(sucursal => {
+        const requerimientosTotales = sucursal.demanda + (sucursal.dis * sucursal.error);
+        const nivelActualExistencias = sucursal.unidades;
+        const requerimientosNetos = requerimientosTotales - nivelActualExistencias;
+
+        // Sumar los requerimientos netos de cada sucursal al total
+        totalRequerimientosNetos += requerimientosNetos;
+
+        repartir = data.unidadesTotales - totalRequerimientosNetos; // Calculamos repartir aquí
+
+        const excesosProrreteado = sucursal.demanda * (repartir / totalDemanda);
+        const asignacionDespacho = requerimientosNetos + excesosProrreteado;
+
+        const filaCalculos = document.createElement('tr');
+        filaCalculos.innerHTML = `
+      <td>${sucursal.ubicacion}</td>
+      <td>${requerimientosTotales}</td>
+      <td>${nivelActualExistencias}</td>
+      <td>${requerimientosNetos}</td>
+      <td>${excesosProrreteado}</td>
+      <td>${asignacionDespacho}</td>
+    `;
+        tablaCalculos.appendChild(filaCalculos);
+      });
+
+      // Agregar una fila adicional para mostrar el total de requerimientos netos
+      const filaTotalRequerimientos = document.createElement('tr');
+      filaTotalRequerimientos.innerHTML = `
+    <td colspan="3" class="fw-bold text-end">Total Requerimientos Netos:</td>
+    <td>${totalRequerimientosNetos}</td>
+    <td colspan="3"></td>
+  `;
+      tablaCalculos.appendChild(filaTotalRequerimientos);
+
+      // Agregar una fila adicional para mostrar el total de demanda
+      const filaDemanda = document.createElement('tr');
+      filaDemanda.innerHTML = `
+    <td colspan="3" class="fw-bold text-end">Demanda Total:</td>
+    <td>${totalDemanda}</td>
+    <td colspan="3"></td>
+  `;
+      tablaCalculos.appendChild(filaDemanda);
+
+      // Agregar una fila adicional para mostrar la cantidad a repartir
+      const filaRepartir = document.createElement('tr');
+      filaRepartir.innerHTML = `
+    <td colspan="3" class="fw-bold text-end">Cantidad a Repartir:</td>
+    <td>${repartir}</td>
+    <td colspan="3"></td>
+  `;
+      tablaCalculos.appendChild(filaRepartir);
+    }
+
+  </script>
+
+</body>
+
+</html>
